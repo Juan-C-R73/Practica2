@@ -1,0 +1,28 @@
+#include <Arduino.h>
+#include <Wire.h>
+#include <Arduino_LSM9DS1.h>
+
+// Nuestra "caja" de 12 bytes (3 floats x 4 bytes)
+struct Aceleracion {
+  float x, y, z;
+} acc;
+
+// Esta función salta sola cuando el ESP32 pide datos
+void enviarDatos() {
+  Wire.write((byte*)&acc, sizeof(Aceleracion));
+}
+
+void setup() {
+  Wire.begin(8); // Nos configuramos como esclavo con la dirección #8
+  Wire.onRequest(enviarDatos); // OJO: onRequest, no onReceive (nos están PIDIENDO datos)
+  
+  if (!IMU.begin()) while (1); // Bloquear si falla el sensor
+}
+
+void loop() {
+  // Leemos continuamente el sensor y actualizamos la caja
+  if (IMU.accelerationAvailable()) {
+    IMU.readAcceleration(acc.x, acc.y, acc.z);
+  }
+  delay(10); // Pequeña pausa para no saturar
+}
